@@ -74,7 +74,7 @@ np.sign(np.sin(2*np.pi*t))           # Square wave alternative
 
 ## 📊 Understanding the Visualizations
 
-<div align="center">
+
 
 ### Time Domain Tab
 <img src="Time_Domain.png" width="400" alt="Time Domain Visualization">
@@ -108,7 +108,6 @@ np.sign(np.sin(2*np.pi*t))           # Square wave alternative
 **Power Capture**: Percentage of signal energy captured  
 **95%/99% lines**: Key convergence benchmarks
 
-</div>
 
 ## ⚙️ Advanced Features
 

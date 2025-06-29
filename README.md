@@ -74,29 +74,41 @@ np.sign(np.sin(2*np.pi*t))           # Square wave alternative
 
 ## 📊 Understanding the Visualizations
 
+<div align="center">
+
 ### Time Domain Tab
-- **Blue line**: Original signal
-- **Red dashed line**: Fourier series reconstruction
-- **Animation**: Progressive harmonic buildup
-- **Harmonic count**: Shows enabled/disabled components
+<img src="time_domain_tab.png" width="400" alt="Time Domain Visualization">
+
+**Blue line**: Original signal  
+**Red dashed line**: Fourier series reconstruction  
+**Animation**: Progressive harmonic buildup  
+**Harmonic count**: Shows enabled/disabled components
 
 ### Frequency Domain Tab
-- **Magnitude spectrum**: Amplitude of each harmonic
-- **Phase spectrum**: Phase relationships
-- **DC component**: Average value (a₀/2)
-- **Selective display**: Only enabled harmonics shown
+<img src="frequency_domain_tab.png" width="400" alt="Frequency Domain Visualization">
+
+**Magnitude spectrum**: Amplitude of each harmonic  
+**Phase spectrum**: Phase relationships  
+**DC component**: Average value (a₀/2)  
+**Selective display**: Only enabled harmonics shown
 
 ### 3D Visualization Tab
-- **Waterfall plot**: Each layer shows reconstruction with N harmonics
-- **Original signal**: Plotted at back for reference
-- **Color progression**: Shows harmonic contribution buildup
-- **Interactive rotation**: Explore from different angles
+<img src="3d_visualization_tab.png" width="400" alt="3D Visualization">
+
+**Waterfall plot**: Each layer shows reconstruction with N harmonics  
+**Original signal**: Plotted at back for reference  
+**Color progression**: Shows harmonic contribution buildup  
+**Interactive rotation**: Explore from different angles
 
 ### Convergence Tab
-- **RMS Error**: Reconstruction accuracy vs harmonics
-- **SNR**: Signal-to-noise ratio improvement
-- **Power Capture**: Percentage of signal energy captured
-- **95%/99% lines**: Key convergence benchmarks
+<img src="convergence_tab.png" width="400" alt="Convergence Analysis">
+
+**RMS Error**: Reconstruction accuracy vs harmonics  
+**SNR**: Signal-to-noise ratio improvement  
+**Power Capture**: Percentage of signal energy captured  
+**95%/99% lines**: Key convergence benchmarks
+
+</div>
 
 ## ⚙️ Advanced Features
 

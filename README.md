@@ -11,7 +11,7 @@ A powerful educational desktop application for visualizing and understanding Fou
 https://github.com/user-attachments/assets/849c85e9-35b6-4b2e-a5ad-d7223df6b5fa
 
 
-*Click the image above to watch the full demonstration video for the fourier Series 
+The full demonstration video for the fourier Series 
 
 </div>
 ## 🚀 Quick Start

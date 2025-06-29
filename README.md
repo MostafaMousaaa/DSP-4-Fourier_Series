@@ -77,7 +77,7 @@ np.sign(np.sin(2*np.pi*t))           # Square wave alternative
 <div align="center">
 
 ### Time Domain Tab
-<img src="time_domain_tab.png" width="400" alt="Time Domain Visualization">
+<img src="Time_Domain.png" width="400" alt="Time Domain Visualization">
 
 **Blue line**: Original signal  
 **Red dashed line**: Fourier series reconstruction  
@@ -85,7 +85,7 @@ np.sign(np.sin(2*np.pi*t))           # Square wave alternative
 **Harmonic count**: Shows enabled/disabled components
 
 ### Frequency Domain Tab
-<img src="frequency_domain_tab.png" width="400" alt="Frequency Domain Visualization">
+<img src="Frequency_Domain.png" width="400" alt="Frequency Domain Visualization">
 
 **Magnitude spectrum**: Amplitude of each harmonic  
 **Phase spectrum**: Phase relationships  
@@ -93,7 +93,7 @@ np.sign(np.sin(2*np.pi*t))           # Square wave alternative
 **Selective display**: Only enabled harmonics shown
 
 ### 3D Visualization Tab
-<img src="3d_visualization_tab.png" width="400" alt="3D Visualization">
+<img src="3D_Visualization.png" width="400" alt="3D Visualization">
 
 **Waterfall plot**: Each layer shows reconstruction with N harmonics  
 **Original signal**: Plotted at back for reference  
@@ -101,7 +101,7 @@ np.sign(np.sin(2*np.pi*t))           # Square wave alternative
 **Interactive rotation**: Explore from different angles
 
 ### Convergence Tab
-<img src="convergence_tab.png" width="400" alt="Convergence Analysis">
+<img src="Converge.png" width="400" alt="Convergence Analysis">
 
 **RMS Error**: Reconstruction accuracy vs harmonics  
 **SNR**: Signal-to-noise ratio improvement  

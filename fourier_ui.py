@@ -9,9 +9,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QFont, QPalette, QColor
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.animation import FuncAnimation
+import matplotlib.cm as cm
 import numpy as np
 from fourier_logic import FourierSeriesAnalyzer
 from mpl_toolkits.mplot3d import Axes3D
@@ -47,6 +48,8 @@ class FourierSeriesMainWindow(QMainWindow):
         self.setup_ui()
         self.setup_connections()
         self.load_default_function()
+        # Initialize harmonic checkboxes with default value
+        self.update_harmonic_checkboxes(15)  # Default harmonics value
         
     def setup_ui(self):
         """Setup the complete user interface"""
@@ -187,8 +190,8 @@ class FourierSeriesMainWindow(QMainWindow):
         
         # Main splitter
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
-        central_widget.setLayout(QHBoxLayout())
-        central_widget.layout().addWidget(main_splitter)
+        layout = QHBoxLayout(central_widget)
+        layout.addWidget(main_splitter)
         
         # Left panel for controls
         left_panel = self.create_control_panel()
@@ -235,7 +238,6 @@ class FourierSeriesMainWindow(QMainWindow):
                 }}
                 QPushButton:hover {{ 
                     background: {color};
-                    transform: scale(1.05);
                 }}
             """)
             btn.clicked.connect(lambda checked, key=func_key: self.load_predefined_function(key))
@@ -454,7 +456,20 @@ class FourierSeriesMainWindow(QMainWindow):
     def update_harmonics(self, value):
         """Update number of harmonics"""
         self.harmonics_value.setText(str(value))
+        self.update_harmonic_checkboxes(value)
         self.update_analysis()
+    
+    def update_harmonic_checkboxes(self, n_harmonics):
+        """Update harmonic checkboxes based on number of harmonics"""
+        # Update checkbox labels and visibility
+        for i, cb in enumerate(self.harmonic_checkboxes):
+            if i < n_harmonics:
+                cb.setText(f"H{i+1}")
+                cb.setVisible(True)
+                cb.setChecked(True)  # Default to checked
+            else:
+                cb.setVisible(False)
+                cb.setChecked(False)
     
     def update_amplitude(self, value):
         """Update amplitude value"""
@@ -477,14 +492,23 @@ class FourierSeriesMainWindow(QMainWindow):
         
         # Generate original signal
         try:
-            original = self.current_function(t) * amplitude
+            if self.current_function is not None:
+                original = self.current_function(t) * amplitude
+            else:
+                return
         except:
             return
         
         # Compute Fourier coefficients
-        a0, an, bn = self.analyzer.compute_coefficients(
-            lambda tt: self.current_function(tt) * amplitude, n_harmonics
-        )
+        if self.current_function is not None:
+            def wrapped_function(tt):
+                return self.current_function(tt) * amplitude
+            a0, an, bn = self.analyzer.compute_coefficients(wrapped_function, n_harmonics)
+        else:
+            return
+        
+        # Store coefficients for selective synthesis
+        self.current_coefficients = (a0, an, bn)
         
         # Generate reconstruction
         reconstructed = self.analyzer.synthesize_progressive(a0, an, bn, t)[-1]
@@ -498,6 +522,21 @@ class FourierSeriesMainWindow(QMainWindow):
         self.progressive_data = self.analyzer.synthesize_progressive(a0, an, bn, t)
         self.t_data = t
         self.original_data = original
+    
+        # Store convergence data for animation
+        if hasattr(self, 'original_data') and hasattr(self, 't_data'):
+            harmonic_range = np.arange(1, len(an) + 1)
+            rms_errors = []
+            
+            for h in harmonic_range:
+                reconstruction = a0/2 * np.ones_like(self.t_data)
+                for n in range(h):
+                    reconstruction += an[n] * np.cos((n+1) * self.analyzer.omega0 * self.t_data)
+                    reconstruction += bn[n] * np.sin((n+1) * self.analyzer.omega0 * self.t_data)
+                rms_error = np.sqrt(np.mean((self.original_data - reconstruction)**2))
+                rms_errors.append(rms_error)
+            
+            self.convergence_data = {'rms_errors': rms_errors}
     
     def update_plots(self, t, original, reconstructed, a0, an, bn):
         """Update all plot displays with enhanced styling"""
@@ -555,14 +594,15 @@ class FourierSeriesMainWindow(QMainWindow):
         stemlines.set_color('#58a6ff')
         stemlines.set_linewidth(3)
         
-        # Enhanced harmonics
+        # Enhanced harmonics with selective coloring
         markerline, stemlines, baseline = ax2.stem(harmonics, magnitude, linefmt='none', markerfmt='o',
                                                   basefmt=' ' )
-        markerline.set_markerfacecolor('#ff6b6b')
-        markerline.set_markeredgecolor('#ff7f7f')
-        markerline.set_markersize(8)
-        stemlines.set_color('#ff6b6b')
-        stemlines.set_linewidth(2.5)
+        
+        # Set colors individually for each harmonic
+        # Simplified approach - set colors for the entire plot
+        markerline.set_markerfacecolor('#4ecdc4')
+        markerline.set_markeredgecolor('#5dd9d1')
+        stemlines.set_color('#4ecdc4')
         
         ax2.set_xlabel('Harmonic Number', color='#e6f3ff', fontsize=11, fontweight='bold')
         ax2.set_ylabel('Magnitude', color='#e6f3ff', fontsize=11, fontweight='bold')
@@ -578,11 +618,12 @@ class FourierSeriesMainWindow(QMainWindow):
         phase = np.arctan2(bn, an)
         markerline, stemlines, baseline = ax3.stem(harmonics, phase, linefmt='none', markerfmt='s',
                                                   basefmt=' ' )
+        
+        # Set colors individually for each harmonic
+        # Simplified approach - set colors for the entire plot
         markerline.set_markerfacecolor('#4ecdc4')
         markerline.set_markeredgecolor('#5dd9d1')
-        markerline.set_markersize(7)
         stemlines.set_color('#4ecdc4')
-        stemlines.set_linewidth(2)
         
         ax3.set_xlabel('Harmonic Number', color='#e6f3ff', fontsize=11, fontweight='bold')
         ax3.set_ylabel('Phase (rad)', color='#e6f3ff', fontsize=11, fontweight='bold')
@@ -621,7 +662,12 @@ class FourierSeriesMainWindow(QMainWindow):
                color='#58a6ff', linewidth=3, alpha=0.8, label='Original')
         
         # Plot progressive reconstructions
-        colors = plt.cm.plasma(np.linspace(0.2, 0.9, max_display_harmonics))
+        colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', 
+                 '#ff7675', '#74b9ff', '#fd79a8', '#fdcb6e', '#6c5ce7']
+        # Repeat colors if needed
+        while len(colors) < max_display_harmonics:
+            colors.extend(colors)
+        colors = colors[:max_display_harmonics]
         
         for h in range(1, max_display_harmonics + 1, 2):  # Every other harmonic for clarity
             # Reconstruct with h harmonics
@@ -634,20 +680,30 @@ class FourierSeriesMainWindow(QMainWindow):
             ax.plot(t_3d, [h] * len(t_3d), reconstruction,
                    color=colors[h-1], linewidth=2, alpha=0.7)
         
-        # Styling
+        # Styling for 3D plot
         ax.set_xlabel('Time (s)', color='#e6f3ff', fontsize=11, fontweight='bold')
         ax.set_ylabel('Harmonics', color='#e6f3ff', fontsize=11, fontweight='bold') 
-        ax.set_zlabel('Amplitude', color='#e6f3ff', fontsize=11, fontweight='bold')
+        
+        # Handle 3D-specific attributes safely
+        try:
+            ax.set_zlabel('Amplitude', color='#e6f3ff', fontsize=11, fontweight='bold')  # type: ignore
+        except AttributeError:
+            pass  # Not a 3D axes
+            
         ax.set_title('3D Harmonic Buildup Visualization', color='#58a6ff', 
                     fontsize=13, fontweight='bold', pad=20)
         
-        # Set background and grid colors
-        ax.xaxis.pane.fill = False
-        ax.yaxis.pane.fill = False
-        ax.zaxis.pane.fill = False
-        ax.xaxis.pane.set_edgecolor('#30363d')
-        ax.yaxis.pane.set_edgecolor('#30363d')
-        ax.zaxis.pane.set_edgecolor('#30363d')
+        # Set background and grid colors for 3D
+        try:
+            ax.xaxis.pane.fill = False  # type: ignore
+            ax.xaxis.pane.set_edgecolor('#30363d')  # type: ignore
+            ax.yaxis.pane.fill = False  # type: ignore
+            ax.yaxis.pane.set_edgecolor('#30363d')  # type: ignore
+            ax.zaxis.pane.fill = False  # type: ignore
+            ax.zaxis.pane.set_edgecolor('#30363d')  # type: ignore
+        except AttributeError:
+            pass  # Not a 3D axes or missing pane attributes
+            
         ax.grid(True, alpha=0.3, color='#30363d')
         
         # Tick colors
@@ -770,13 +826,13 @@ class FourierSeriesMainWindow(QMainWindow):
         
         if power_95_idx > 0:
             ax4.annotate(f'95% at H{power_95_idx+1}', 
-                        xy=(power_95_idx+1, 95), xytext=(power_95_idx+5, 85),
+                        xy=(float(power_95_idx+1), 95.0), xytext=(float(power_95_idx+5), 85.0),
                         arrowprops=dict(arrowstyle='->', color='#ff6b6b', alpha=0.7),
                         color='#ff6b6b', fontweight='bold', fontsize=9)
         
         if power_99_idx > 0:
             ax4.annotate(f'99% at H{power_99_idx+1}', 
-                        xy=(power_99_idx+1, 99), xytext=(power_99_idx+5, 102),
+                        xy=(float(power_99_idx+1), 99.0), xytext=(float(power_99_idx+5), 102.0),
                         arrowprops=dict(arrowstyle='->', color='#58a6ff', alpha=0.7),
                         color='#58a6ff', fontweight='bold', fontsize=9)
         
@@ -816,12 +872,366 @@ class FourierSeriesMainWindow(QMainWindow):
         if not hasattr(self, 'progressive_data') or not self.progressive_data:
             return
         
-        # Get enabled harmonics
+        # Get enabled harmonics (first 20 checkboxes)
         enabled = [cb.isChecked() for cb in self.harmonic_checkboxes]
         
-        # Perform selective synthesis
-        # This would require access to coefficients - simplified for now
-        self.update_analysis()
+        # Ensure we have the necessary data
+        if not hasattr(self, 't_data') or not hasattr(self, 'original_data') or not hasattr(self, 'current_coefficients'):
+            return
+        
+        # Extract stored coefficients
+        a0, an, bn = self.current_coefficients
+        
+        # Perform selective synthesis using the analyzer's method
+        selective_reconstructed = self.analyzer.synthesize_selective(a0, an, bn, self.t_data, enabled)
+        
+        # Update ALL plot tabs with selective reconstruction
+        self.update_selective_plots(self.t_data, self.original_data, selective_reconstructed, a0, an, bn, enabled)
+        
+        # Update metrics for selective reconstruction
+        self.update_metrics(self.original_data, selective_reconstructed, an, bn)
+    
+    def update_selective_plots(self, t, original, reconstructed, a0, an, bn, enabled_harmonics):
+        """Update all plot displays with selective harmonic reconstruction"""
+        # Update time domain plot
+        self.update_selective_time_plot(t, original, reconstructed, a0, an, bn, enabled_harmonics)
+        
+        # Update frequency domain plot with selective harmonics
+        self.update_selective_freq_plot(t, original, reconstructed, a0, an, bn, enabled_harmonics)
+        
+        # Update 3D visualization with selective harmonics
+        self.update_selective_3d_plot(t, original, a0, an, bn, enabled_harmonics)
+        
+        # Update convergence analysis with selective harmonics
+        self.update_selective_convergence_plot(t, original, a0, an, bn, enabled_harmonics)
+    
+    def update_selective_time_plot(self, t, original, reconstructed, a0, an, bn, enabled_harmonics):
+        """Update time domain plot with selective harmonic reconstruction"""
+        self.time_plot.fig.clear()
+        ax = self.time_plot.fig.add_subplot(111, facecolor='#0d1117')
+        
+        # Plot original signal
+        ax.plot(t, original, color='#58a6ff', linewidth=3, label='Original Function', alpha=0.9)
+        
+        # Plot selective reconstruction
+        ax.plot(t, reconstructed, color='#ff6b6b', linewidth=2.5, linestyle='--', 
+               label='Selective Reconstruction', alpha=0.8)
+        
+        # Count enabled harmonics for display
+        enabled_count = sum(enabled_harmonics)
+        total_harmonics = len(enabled_harmonics)
+        
+        # Enhanced axes styling
+        ax.set_xlabel('Time (s)', color='#e6f3ff', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Amplitude', color='#e6f3ff', fontsize=12, fontweight='bold')
+        ax.set_title(f'Selective Harmonic Reconstruction ({enabled_count}/{total_harmonics} harmonics)', 
+                    color='#58a6ff', fontsize=14, fontweight='bold', pad=20)
+        
+        # Enhanced legend
+        legend = ax.legend(loc='upper right', frameon=True, fancybox=True, shadow=True,
+                          facecolor='#161b22', edgecolor='#0066cc', framealpha=0.9)
+        legend.get_frame().set_linewidth(2)
+        for text in legend.get_texts():
+            text.set_color('#e6f3ff')
+            text.set_fontsize(11)
+            text.set_fontweight('bold')
+        
+        # Enhanced grid
+        ax.grid(True, alpha=0.3, color='#30363d', linestyle='-', linewidth=0.8)
+        ax.set_facecolor('#0d1117')
+        
+        # Enhanced tick styling
+        ax.tick_params(colors='#e6f3ff', labelsize=10, width=1.5)
+        for spine in ax.spines.values():
+            spine.set_color('#0066cc')
+            spine.set_linewidth(2)
+        
+        # Add harmonic selection info
+        enabled_list = [i+1 for i, enabled in enumerate(enabled_harmonics) if enabled]
+        if enabled_list:
+            enabled_text = f"Enabled: H{', H'.join(map(str, enabled_list[:10]))}"
+            if len(enabled_list) > 10:
+                enabled_text += f" ... (+{len(enabled_list)-10} more)"
+        else:
+            enabled_text = "No harmonics enabled"
+        
+        ax.text(0.02, 0.98, enabled_text, transform=ax.transAxes, 
+               color='#e6f3ff', fontsize=10, fontweight='bold',
+               bbox=dict(boxstyle='round', facecolor='#161b22', alpha=0.8),
+               verticalalignment='top')
+        
+        self.time_plot.fig.patch.set_facecolor('#1a1a1a')
+        self.time_plot.fig.tight_layout(pad=2.0)
+        self.time_plot.draw()
+    
+    def update_selective_freq_plot(self, t, original, reconstructed, a0, an, bn, enabled_harmonics):
+        """Update frequency domain plot with selective harmonics"""
+        self.freq_plot.fig.clear()
+        
+        # Create selective coefficients (zero out disabled harmonics)
+        selective_an = an.copy()
+        selective_bn = bn.copy()
+        for i, enabled in enumerate(enabled_harmonics):
+            if not enabled and i < len(selective_an):
+                selective_an[i] = 0
+                selective_bn[i] = 0
+        
+        # Magnitude spectrum
+        ax2 = self.freq_plot.fig.add_subplot(211, facecolor='#0d1117')
+        harmonics = np.arange(1, len(an) + 1)
+        magnitude = np.sqrt(selective_an**2 + selective_bn**2)
+        
+        # Enhanced DC component
+        markerline, stemlines, baseline = ax2.stem([0], [a0/2], linefmt='none', markerfmt='o',
+                                                  basefmt=' ' )
+        markerline.set_markerfacecolor('#58a6ff')
+        markerline.set_markeredgecolor('#79c0ff')
+        markerline.set_markersize(10)
+        stemlines.set_color('#58a6ff')
+        stemlines.set_linewidth(3)
+        
+        # Enhanced harmonics with selective coloring
+        markerline, stemlines, baseline = ax2.stem(harmonics, magnitude, linefmt='none', markerfmt='o',
+                                                  basefmt=' ' )
+        
+        # Use a single color for all markers (simplified approach)
+        markerline.set_markerfacecolor('#ff6b6b')
+        markerline.set_markeredgecolor('#ff7f7f')
+        markerline.set_markersize(8)
+        stemlines.set_color('#ff6b6b')
+        stemlines.set_linewidth(2.5)
+        
+        ax2.set_xlabel('Harmonic Number', color='#e6f3ff', fontsize=11, fontweight='bold')
+        ax2.set_ylabel('Magnitude', color='#e6f3ff', fontsize=11, fontweight='bold')
+        ax2.set_title('Selective Magnitude Spectrum', color='#58a6ff', fontsize=13, fontweight='bold')
+        ax2.tick_params(colors='#e6f3ff', labelsize=9)
+        ax2.grid(True, alpha=0.3, color='#30363d')
+        for spine in ax2.spines.values():
+            spine.set_color('#0066cc')
+            spine.set_linewidth(1.5)
+        
+        # Enhanced Phase spectrum
+        ax3 = self.freq_plot.fig.add_subplot(212, facecolor='#0d1117')
+        phase = np.arctan2(selective_bn, selective_an)
+        markerline, stemlines, baseline = ax3.stem(harmonics, phase, linefmt='none', markerfmt='s',
+                                                  basefmt=' ' )
+        
+        # Use a single color for all markers (simplified approach)
+        markerline.set_markerfacecolor('#4ecdc4')
+        markerline.set_markeredgecolor('#5dd9d1')
+        markerline.set_markersize(7)
+        stemlines.set_color('#4ecdc4')
+        stemlines.set_linewidth(2)
+        
+        ax3.set_xlabel('Harmonic Number', color='#e6f3ff', fontsize=11, fontweight='bold')
+        ax3.set_ylabel('Phase (rad)', color='#e6f3ff', fontsize=11, fontweight='bold')
+        ax3.set_title('Selective Phase Spectrum', color='#58a6ff', fontsize=13, fontweight='bold')
+        ax3.tick_params(colors='#e6f3ff', labelsize=9)
+        ax3.grid(True, alpha=0.3, color='#30363d')
+        for spine in ax3.spines.values():
+            spine.set_color('#0066cc')
+            spine.set_linewidth(1.5)
+        
+        self.freq_plot.fig.patch.set_facecolor('#1a1a1a')
+        self.freq_plot.fig.tight_layout(pad=2.0)
+        self.freq_plot.draw()
+    
+    def update_selective_3d_plot(self, t, original, a0, an, bn, enabled_harmonics):
+        """Create 3D waterfall plot showing selective harmonic buildup"""
+        self.plot_3d.fig.clear()
+        ax = self.plot_3d.fig.add_subplot(111, projection='3d', facecolor='#0d1117')
+        
+        # Generate selective reconstructions for 3D display
+        n_harmonics = len(an)
+        max_display_harmonics = min(20, n_harmonics)  # Limit for performance
+        
+        # Sample fewer time points for 3D performance
+        t_3d = t[::10]  # Every 10th point
+        original_3d = original[::10]
+        
+        # Plot original signal at the back
+        ax.plot(t_3d, [0] * len(t_3d), original_3d, 
+               color='#58a6ff', linewidth=3, alpha=0.8, label='Original')
+        
+        # Plot selective reconstructions
+        colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', 
+                 '#ff7675', '#74b9ff', '#fd79a8', '#fdcb6e', '#6c5ce7']
+        # Repeat colors if needed
+        while len(colors) < max_display_harmonics:
+            colors.extend(colors)
+        colors = colors[:max_display_harmonics]
+        
+        for h in range(1, max_display_harmonics + 1, 2):  # Every other harmonic for clarity
+            # Reconstruct with selective harmonics up to h
+            reconstruction = a0/2 * np.ones_like(t_3d)
+            for n in range(h):
+                if n < len(an) and enabled_harmonics[n]:  # Only include enabled harmonics
+                    reconstruction += an[n] * np.cos((n+1) * self.analyzer.omega0 * t_3d)
+                    reconstruction += bn[n] * np.sin((n+1) * self.analyzer.omega0 * t_3d)
+            
+            ax.plot(t_3d, [h] * len(t_3d), reconstruction,
+                   color=colors[h-1], linewidth=2, alpha=0.7)
+        
+        # Styling for 3D plot
+        ax.set_xlabel('Time (s)', color='#e6f3ff', fontsize=11, fontweight='bold')
+        ax.set_ylabel('Harmonics', color='#e6f3ff', fontsize=11, fontweight='bold') 
+        
+        # Handle 3D-specific attributes safely
+        try:
+            ax.set_zlabel('Amplitude', color='#e6f3ff', fontsize=11, fontweight='bold')  # type: ignore
+        except AttributeError:
+            pass  # Not a 3D axes
+            
+        ax.set_title('Selective 3D Harmonic Buildup', color='#58a6ff', 
+                    fontsize=13, fontweight='bold', pad=20)
+        
+        # Set background and grid colors for 3D
+        try:
+            ax.xaxis.pane.fill = False  # type: ignore
+            ax.xaxis.pane.set_edgecolor('#30363d')  # type: ignore
+            ax.yaxis.pane.fill = False  # type: ignore
+            ax.yaxis.pane.set_edgecolor('#30363d')  # type: ignore
+            ax.zaxis.pane.fill = False  # type: ignore
+            ax.zaxis.pane.set_edgecolor('#30363d')  # type: ignore
+        except AttributeError:
+            pass  # Not a 3D axes or missing pane attributes
+            
+        ax.grid(True, alpha=0.3, color='#30363d')
+        
+        # Tick colors
+        ax.tick_params(colors='#e6f3ff', labelsize=9)
+        
+        self.plot_3d.fig.patch.set_facecolor('#1a1a1a')
+        self.plot_3d.draw()
+    
+    def update_selective_convergence_plot(self, t, original, a0, an, bn, enabled_harmonics):
+        """Create convergence analysis showing error vs selective harmonics"""
+        self.convergence_plot.fig.clear()
+        
+        # Calculate selective reconstructions and errors
+        n_harmonics = len(an)
+        harmonic_range = np.arange(1, n_harmonics + 1)
+        rms_errors = []
+        max_errors = []
+        snr_values = []
+        power_ratios = []
+        
+        for h in harmonic_range:
+            # Reconstruct with selective harmonics up to h
+            reconstruction = a0/2 * np.ones_like(t)
+            for n in range(h):
+                if n < len(an) and enabled_harmonics[n]:  # Only include enabled harmonics
+                    reconstruction += an[n] * np.cos((n+1) * self.analyzer.omega0 * t)
+                    reconstruction += bn[n] * np.sin((n+1) * self.analyzer.omega0 * t)
+            
+            # Calculate metrics
+            rms_error = np.sqrt(np.mean((original - reconstruction)**2))
+            max_error = np.max(np.abs(original - reconstruction))
+            
+            # Signal-to-noise ratio
+            signal_power = np.mean(original**2)
+            noise_power = np.mean((original - reconstruction)**2)
+            snr = 10 * np.log10(signal_power / (noise_power + 1e-12))
+            
+            # Power captured by selective harmonics
+            total_power = np.sum(an**2 + bn**2)
+            captured_power = np.sum([an[i]**2 + bn[i]**2 for i in range(h) if enabled_harmonics[i]])
+            power_ratio = captured_power / (total_power + 1e-12) * 100
+            
+            rms_errors.append(rms_error)
+            max_errors.append(max_error)
+            snr_values.append(snr)
+            power_ratios.append(power_ratio)
+        
+        # Create subplots for convergence analysis
+        ax1 = self.convergence_plot.fig.add_subplot(221, facecolor='#0d1117')
+        ax2 = self.convergence_plot.fig.add_subplot(222, facecolor='#0d1117')
+        ax3 = self.convergence_plot.fig.add_subplot(223, facecolor='#0d1117')
+        ax4 = self.convergence_plot.fig.add_subplot(224, facecolor='#0d1117')
+        
+        # RMS Error vs Harmonics
+        ax1.semilogy(harmonic_range, rms_errors, color='#ff6b6b', linewidth=2.5, 
+                    marker='o', markersize=4, markerfacecolor='#ff7f7f')
+        ax1.set_xlabel('Number of Harmonics', color='#e6f3ff', fontweight='bold')
+        ax1.set_ylabel('RMS Error', color='#e6f3ff', fontweight='bold')
+        ax1.set_title('Selective RMS Error Convergence', color='#58a6ff', fontweight='bold')
+        ax1.grid(True, alpha=0.3, color='#30363d')
+        ax1.tick_params(colors='#e6f3ff', labelsize=9)
+        for spine in ax1.spines.values():
+            spine.set_color('#0066cc')
+        
+        # Maximum Error vs Harmonics
+        ax2.semilogy(harmonic_range, max_errors, color='#4ecdc4', linewidth=2.5,
+                    marker='s', markersize=4, markerfacecolor='#5dd9d1')
+        ax2.set_xlabel('Number of Harmonics', color='#e6f3ff', fontweight='bold')
+        ax2.set_ylabel('Maximum Error', color='#e6f3ff', fontweight='bold')
+        ax2.set_title('Selective Maximum Error Convergence', color='#58a6ff', fontweight='bold')
+        ax2.grid(True, alpha=0.3, color='#30363d')
+        ax2.tick_params(colors='#e6f3ff', labelsize=9)
+        for spine in ax2.spines.values():
+            spine.set_color('#0066cc')
+        
+        # SNR vs Harmonics
+        ax3.plot(harmonic_range, snr_values, color='#ffd93d', linewidth=2.5,
+                marker='^', markersize=4, markerfacecolor='#ffe066')
+        ax3.set_xlabel('Number of Harmonics', color='#e6f3ff', fontweight='bold')
+        ax3.set_ylabel('SNR (dB)', color='#e6f3ff', fontweight='bold')
+        ax3.set_title('Selective Signal-to-Noise Ratio', color='#58a6ff', fontweight='bold')
+        ax3.grid(True, alpha=0.3, color='#30363d')
+        ax3.tick_params(colors='#e6f3ff', labelsize=9)
+        for spine in ax3.spines.values():
+            spine.set_color('#0066cc')
+        
+        # Power Capture vs Harmonics
+        ax4.plot(harmonic_range, power_ratios, color='#a8e6cf', linewidth=2.5,
+                marker='d', markersize=4, markerfacecolor='#b8f0df')
+        ax4.axhline(y=95, color='#ff6b6b', linestyle='--', alpha=0.7, linewidth=2)
+        ax4.axhline(y=99, color='#58a6ff', linestyle='--', alpha=0.7, linewidth=2)
+        ax4.set_xlabel('Number of Harmonics', color='#e6f3ff', fontweight='bold')
+        ax4.set_ylabel('Power Captured (%)', color='#e6f3ff', fontweight='bold')
+        ax4.set_title('Selective Cumulative Power Capture', color='#58a6ff', fontweight='bold')
+        ax4.set_ylim(0, 105)
+        ax4.grid(True, alpha=0.3, color='#30363d')
+        ax4.tick_params(colors='#e6f3ff', labelsize=9)
+        for spine in ax4.spines.values():
+            spine.set_color('#0066cc')
+        
+        # Add text annotations for key metrics
+        final_rms = rms_errors[-1]
+        final_snr = snr_values[-1]
+        final_power = power_ratios[-1]
+        
+        ax1.text(0.05, 0.95, f'Final RMS: {final_rms:.4f}', transform=ax1.transAxes,
+                color='#e6f3ff', fontsize=10, fontweight='bold',
+                bbox=dict(boxstyle='round', facecolor='#161b22', alpha=0.8))
+        
+        ax3.text(0.05, 0.95, f'Final SNR: {final_snr:.1f} dB', transform=ax3.transAxes,
+                color='#e6f3ff', fontsize=10, fontweight='bold',
+                bbox=dict(boxstyle='round', facecolor='#161b22', alpha=0.8))
+        
+        ax4.text(0.05, 0.05, f'Power: {final_power:.1f}%', transform=ax4.transAxes,
+                color='#e6f3ff', fontsize=10, fontweight='bold',
+                bbox=dict(boxstyle='round', facecolor='#161b22', alpha=0.8))
+        
+        # Find 95% and 99% power points
+        power_95_idx = np.argmax(np.array(power_ratios) >= 95)
+        power_99_idx = np.argmax(np.array(power_ratios) >= 99)
+        
+        if power_95_idx > 0:
+            ax4.annotate(f'95% at H{power_95_idx+1}', 
+                        xy=(float(power_95_idx+1), 95.0), xytext=(float(power_95_idx+5), 85.0),
+                        arrowprops=dict(arrowstyle='->', color='#ff6b6b', alpha=0.7),
+                        color='#ff6b6b', fontweight='bold', fontsize=9)
+        
+        if power_99_idx > 0:
+            ax4.annotate(f'99% at H{power_99_idx+1}', 
+                        xy=(float(power_99_idx+1), 99.0), xytext=(float(power_99_idx+5), 102.0),
+                        arrowprops=dict(arrowstyle='->', color='#58a6ff', alpha=0.7),
+                        color='#58a6ff', fontweight='bold', fontsize=9)
+        
+        self.convergence_plot.fig.patch.set_facecolor('#1a1a1a')
+        self.convergence_plot.fig.tight_layout(pad=2.0)
+        self.convergence_plot.draw()
     
     def start_animation(self):
         """Start the progressive reconstruction animation"""
@@ -892,58 +1302,6 @@ class FourierSeriesMainWindow(QMainWindow):
         self.time_plot.draw()
         
         self.animation_step += 1
-    
-    def update_analysis(self):
-        """Perform complete Fourier analysis and update all displays"""
-        if self.current_function is None:
-            return
-        
-        # Get current parameters
-        period = float(self.period_value.text())
-        n_harmonics = int(self.harmonics_value.text())
-        amplitude = float(self.amplitude_value.text())
-        
-        # Generate time vector
-        t = np.linspace(0, 2*period, 2000)
-        
-        # Generate original signal
-        try:
-            original = self.current_function(t) * amplitude
-        except:
-            return
-        
-        # Compute Fourier coefficients
-        a0, an, bn = self.analyzer.compute_coefficients(
-            lambda tt: self.current_function(tt) * amplitude, n_harmonics
-        )
-        
-        # Generate reconstruction
-        reconstructed = self.analyzer.synthesize_progressive(a0, an, bn, t)[-1]
-        
-        # Update all displays
-        self.update_plots(t, original, reconstructed, a0, an, bn)
-        self.update_coefficient_table(a0, an, bn)
-        self.update_metrics(original, reconstructed, an, bn)
-        
-        # Store for animation
-        self.progressive_data = self.analyzer.synthesize_progressive(a0, an, bn, t)
-        self.t_data = t
-        self.original_data = original
-    
-        # Store convergence data for animation
-        if hasattr(self, 'original_data') and hasattr(self, 't_data'):
-            harmonic_range = np.arange(1, len(an) + 1)
-            rms_errors = []
-            
-            for h in harmonic_range:
-                reconstruction = a0/2 * np.ones_like(self.t_data)
-                for n in range(h):
-                    reconstruction += an[n] * np.cos((n+1) * self.analyzer.omega0 * self.t_data)
-                    reconstruction += bn[n] * np.sin((n+1) * self.analyzer.omega0 * self.t_data)
-                rms_error = np.sqrt(np.mean((self.original_data - reconstruction)**2))
-                rms_errors.append(rms_error)
-            
-            self.convergence_data = {'rms_errors': rms_errors}
 
 def main():
     app = QApplication(sys.argv)

@@ -5,8 +5,11 @@ A powerful educational desktop application for visualizing and understanding Fou
 ## 🎬 Demo Video
 
 <div align="center">
+
 **Watch the DSP Fourier Series Visualization in action:**
+
 https://github.com/user-attachments/assets/849c85e9-35b6-4b2e-a5ad-d7223df6b5fa
+
 
 *Click the image above to watch the full demonstration video for the fourier Series 
 

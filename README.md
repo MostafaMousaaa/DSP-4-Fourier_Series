@@ -138,26 +138,22 @@ np.sign(np.sin(2*np.pi*t))           # Square wave alternative
 5. **Check convergence tab** for quantitative analysis
 6. **Toggle harmonics** to see individual contributions
 
-## 🔧 Technical Details
+## 🤝 Contributing
 
-### System Requirements
-- **OS**: Windows 10+, macOS 10.14+, Linux
-- **Python**: 3.8+
-- **RAM**: 4GB minimum
-- **Display**: 1400x900 minimum
+Enhance this educational resource by adding:
+1. **🎛️ New System Examples** (high-pass filters, differentiators, etc.)
+2. **🎮 Interactive Features** for enhanced learning
+3. **📊 Analysis Tools** for system characterization
+4. **🌍 Real-World Applications** of convolution
 
-### File Structure
-```
-fourier_logic.py    # Core mathematical operations
-fourier_ui.py       # PySide6 user interface
-README.md          # This documentation
-```
+## 📄 License
 
-### Performance Notes
-- 3D plots use downsampled data for smooth interaction
-- Animation uses cached progressive reconstructions
-- Coefficient computation optimized with vectorized operations
+This project is for educational purposes. Feel free to use and modify for learning DSP concepts.
 
 ---
 
-**Perfect for**: Signal processing courses, mathematics education, research demonstrations, and self-study of Fourier analysis concepts.
+**Digital Signal Processing: Linear-Time-Invariant Systems**  
+**Author**: DSP Student  
+**Date**: June 29, 2025  
+**Course**: Digital Signal Processing Fundamentals  
+**Textbook Reference**: Sections 2.4-2.5 (Proakis and Manolakis, 4th ed.)

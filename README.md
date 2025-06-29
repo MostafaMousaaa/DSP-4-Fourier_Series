@@ -1,157 +1,151 @@
 # Interactive Fourier Series Demonstrator
 
-An educational desktop application for visualizing and understanding Fourier series decomposition of periodic signals.
+A powerful educational desktop application for visualizing and understanding Fourier series decomposition of periodic signals with real-time interactive controls.
 
-## Features
+## 🚀 Quick Start
 
-- **Real-time Fourier Analysis**: Interactive parameter adjustment with instant visualization
-- **Multiple Signal Types**: Square, triangle, sawtooth, half-wave rectified, pulse train, and custom functions
-- **Progressive Animation**: Watch harmonic buildup step-by-step
-- **3D Visualization**: Waterfall plot showing harmonic contributions
-- **Convergence Analysis**: Track reconstruction error and power capture
-- **Educational Interface**: Professional UI optimized for learning
-
-## Technical Concepts
-
-### Fourier Series Fundamentals
-- **Periodic Signal Decomposition**: Any periodic function can be expressed as a sum of sine and cosine terms
-- **Harmonic Analysis**: Understanding frequency content through magnitude and phase spectra
-- **Convergence Behavior**: How reconstruction accuracy improves with more harmonics
-- **Gibbs Phenomenon**: Overshoot behavior near discontinuities
-
-### Mathematical Implementation
-- **Coefficient Calculation**: Numerical integration using trapezoidal rule
-- **Synthesis**: Real-time reconstruction from Fourier coefficients
-- **Error Metrics**: RMS error, SNR, and Total Harmonic Distortion (THD)
-
-## Installation
-
-### Requirements
+### Installation
 ```bash
 pip install PySide6 matplotlib numpy scipy
+python fourier_ui.py
 ```
 
-### File Structure
+### Basic Demo
+1. **Launch** the application
+2. **Select** a waveform (Square, Triangle, Sawtooth, etc.)
+3. **Adjust** harmonics slider (1-50) to see reconstruction improve
+4. **Explore** the 4 visualization tabs
+5. **Use** harmonic checkboxes for selective synthesis
+
+## 🎯 Key Features
+
+### Interactive Controls
+- **Real-time parameter adjustment** with instant visualization
+- **Progressive animation** showing harmonic buildup
+- **Selective harmonic synthesis** via checkboxes
+- **Custom function input** for advanced exploration
+
+### Multi-Tab Visualization
+- **📈 Time Domain**: Original vs reconstructed signal comparison
+- **📊 Frequency Domain**: Magnitude and phase spectra
+- **🎬 3D Visualization**: Waterfall plot of harmonic contributions  
+- **📉 Convergence**: Error analysis and power capture metrics
+
+### Signal Types
+- **Preset waveforms**: Square, Triangle, Sawtooth, Half-wave, Pulse Train
+- **Custom functions**: Enter any mathematical expression using variable `t`
+
+## 🎓 Educational Demonstrations
+
+### 1. Square Wave Analysis
+- Shows **odd harmonics only** (1st, 3rd, 5th, ...)
+- Demonstrates **Gibbs phenomenon** near discontinuities
+- Requires **many harmonics** for accurate reconstruction
+
+### 2. Triangle Wave Comparison
+- **Faster convergence** than square wave
+- **Smoother reconstruction** with fewer harmonics
+- Illustrates **symmetry properties**
+
+### 3. Harmonic Selection
+- **Check/uncheck** individual harmonics
+- **Observe** how each contributes to reconstruction
+- **Understand** frequency domain representation
+
+### 4. Custom Function Examples
+```python
+np.sin(2*np.pi*t)                    # Pure sine wave
+np.sin(2*np.pi*t) + 0.5*np.sin(6*np.pi*t)  # Fundamental + 3rd harmonic
+np.abs(np.sin(2*np.pi*t))            # Full-wave rectified
+np.sign(np.sin(2*np.pi*t))           # Square wave alternative
 ```
-fourier_logic.py    # Core mathematical operations
-fourier_ui.py       # PySide6 user interface
-```
 
-## Quick Start
+## 📊 Understanding the Visualizations
 
-1. **Launch Application**
-   ```bash
-   python fourier_ui.py
-   ```
+### Time Domain Tab
+- **Blue line**: Original signal
+- **Red dashed line**: Fourier series reconstruction
+- **Animation**: Progressive harmonic buildup
+- **Harmonic count**: Shows enabled/disabled components
 
-2. **Select a Function**
-   - Click preset buttons (Square, Triangle, etc.)
-   - Or enter custom function using variable `t`
+### Frequency Domain Tab
+- **Magnitude spectrum**: Amplitude of each harmonic
+- **Phase spectrum**: Phase relationships
+- **DC component**: Average value (a₀/2)
+- **Selective display**: Only enabled harmonics shown
 
-3. **Adjust Parameters**
-   - **Period**: Signal repetition interval
-   - **Harmonics**: Number of frequency components (1-50)
-   - **Amplitude**: Signal scaling factor
+### 3D Visualization Tab
+- **Waterfall plot**: Each layer shows reconstruction with N harmonics
+- **Original signal**: Plotted at back for reference
+- **Color progression**: Shows harmonic contribution buildup
+- **Interactive rotation**: Explore from different angles
 
-4. **Explore Visualizations**
-   - **Time Domain**: Original vs reconstructed signal
-   - **Frequency Domain**: Magnitude and phase spectra
-   - **3D View**: Harmonic buildup visualization
-   - **Convergence**: Error analysis and power capture
+### Convergence Tab
+- **RMS Error**: Reconstruction accuracy vs harmonics
+- **SNR**: Signal-to-noise ratio improvement
+- **Power Capture**: Percentage of signal energy captured
+- **95%/99% lines**: Key convergence benchmarks
 
-## Educational Workflow
+## ⚙️ Advanced Features
 
-### Basic Analysis
-1. Start with **Square Wave** (demonstrates odd harmonics only)
-2. Observe **Gibbs phenomenon** near edges
-3. Increase harmonics to see improved reconstruction
-4. Check **Convergence tab** for quantitative metrics
+### Animation Controls
+- **Play**: Start progressive reconstruction
+- **Pause**: Freeze current state
+- **Reset**: Return to beginning
 
-### Advanced Exploration
-1. Compare different waveforms:
-   - **Triangle**: Faster convergence than square wave
-   - **Sawtooth**: Contains all harmonics
-   - **Pulse Train**: Adjustable duty cycle effects
-
-2. Custom functions:
-   ```python
-   np.sin(2*np.pi*t) + 0.3*np.sin(6*np.pi*t)  # Fundamental + 3rd harmonic
-   np.abs(np.sin(2*np.pi*t))                   # Full-wave rectified sine
-   ```
-
-3. Use **Animation** to visualize progressive reconstruction
-
-### Key Observations
-- **Square waves** require many harmonics due to sharp transitions
-- **Smooth functions** converge faster (fewer harmonics needed)
-- **Symmetry properties** determine which harmonics are present
-- **95% power capture** often achieved with relatively few harmonics
-
-## Interface Guide
-
-### Control Panel
-- **Function Selection**: Preset waveforms with mathematical descriptions
-- **Parameter Sliders**: Real-time adjustment with visual feedback
-- **Animation Controls**: Play/pause/reset progressive buildup
-- **Harmonic Toggles**: Enable/disable individual frequency components
-
-### Visualization Tabs
-- **📈 Time Domain**: Signal comparison with enhanced styling
-- **📊 Frequency Domain**: Dual-plot magnitude/phase spectra
-- **🎬 3D Visualization**: Interactive waterfall display
-- **📉 Convergence**: Multi-metric error analysis
+### Parameter Adjustment
+- **Period**: Signal repetition interval (0.1-20 seconds)
+- **Harmonics**: Number of frequency components (1-50)
+- **Amplitude**: Signal scaling factor (0.1-5.0)
 
 ### Analysis Metrics
 - **RMS Error**: Root-mean-square reconstruction error
 - **SNR**: Signal-to-noise ratio in decibels
 - **THD**: Total harmonic distortion percentage
-- **Power Capture**: Cumulative energy in first N harmonics
 
-## Technical Notes
+## 🎯 Learning Objectives
 
-### Performance Optimization
+### Signal Processing Concepts
+- **Frequency domain representation** of periodic signals
+- **Harmonic content** and its relationship to signal shape
+- **Convergence behavior** of Fourier series
+- **Filtering effects** through harmonic selection
+
+### Mathematical Understanding
+- **Fourier coefficients** calculation and interpretation
+- **Orthogonality** of sine and cosine functions
+- **Periodicity** and symmetry properties
+- **Infinite series** convergence
+
+## 💡 Pro Tips
+
+1. **Start with square wave** to see Gibbs phenomenon
+2. **Compare waveforms** to understand convergence differences
+3. **Use animation** to visualize reconstruction process
+4. **Experiment with custom functions** to test understanding
+5. **Check convergence tab** for quantitative analysis
+6. **Toggle harmonics** to see individual contributions
+
+## 🔧 Technical Details
+
+### System Requirements
+- **OS**: Windows 10+, macOS 10.14+, Linux
+- **Python**: 3.8+
+- **RAM**: 4GB minimum
+- **Display**: 1400x900 minimum
+
+### File Structure
+```
+fourier_logic.py    # Core mathematical operations
+fourier_ui.py       # PySide6 user interface
+README.md          # This documentation
+```
+
+### Performance Notes
 - 3D plots use downsampled data for smooth interaction
 - Animation uses cached progressive reconstructions
 - Coefficient computation optimized with vectorized operations
 
-### Educational Design
-- Color-coded visualizations for intuitive understanding
-- Progressive disclosure of complexity
-- Quantitative metrics alongside visual feedback
-- Professional styling optimized for presentation
-
-## Example Use Cases
-
-### Signal Processing Course
-- Demonstrate frequency domain representation
-- Illustrate sampling and reconstruction concepts
-- Show practical filter design implications
-
-### Mathematics Education
-- Visualize infinite series convergence
-- Connect abstract formulas to intuitive graphics
-- Explore symmetry and periodicity concepts
-
-### Research Applications
-- Analyze periodic measurement data
-- Understand spectral content of experimental signals
-- Validate theoretical predictions
-
-## Tips for Effective Learning
-
-1. **Start Simple**: Begin with basic waveforms before custom functions
-2. **Observe Patterns**: Note which signals require more/fewer harmonics
-3. **Use Animation**: Step-through mode reveals reconstruction process
-4. **Check Convergence**: Quantitative analysis supplements visual understanding
-5. **Experiment**: Try unusual functions to test intuition
-
-## System Requirements
-
-- **OS**: Windows 10+, macOS 10.14+, Linux
-- **Python**: 3.8+
-- **RAM**: 4GB minimum, 8GB recommended
-- **Display**: 1400x900 minimum resolution
-
 ---
 
-**Educational Focus**: This tool emphasizes conceptual understanding through interactive visualization rather than computational efficiency. Ideal for classroom demonstrations, self-study, and research exploration.
+**Perfect for**: Signal processing courses, mathematics education, research demonstrations, and self-study of Fourier analysis concepts.
